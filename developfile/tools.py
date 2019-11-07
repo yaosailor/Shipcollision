@@ -7,7 +7,7 @@
 """
 import pandas as pd
 import datetime
-
+import numpy as np
 
 '''
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -55,36 +55,60 @@ def read_ais(input_url):
     df = pd.read_excel(input_url)
     keys_data = df.keys()
     # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_excel.html
-    next_ship_index = df.loc[df['FID'] == 'FID']  # 读取某一行
+    # next_ship_index: find the index of title
+    # because the fist title is not include the varible, I add the first index '0' and last index  into the ship_spiltindex
+    next_ship_index = df.loc[df['FID'] == 'FID']
+    ship_spiltindex = next_ship_index.index.values
+    ship_spiltindex = np.insert(ship_spiltindex, [0, len(ship_spiltindex)], [-1, df.shape[0]])
     # These are the parameters we need
+    # In order to distinguish list and others, I changed the type of length and width into 'string' instead of 'float'.
     parameter_needs = {'mmsi': 'int',
                        'vessel_type': 'str',
-                       'length': 'float',
-                       'width': 'float',
+                       'length': 'str',
+                       'width': 'str',
                        'longitude': 'float',
                        'latitude': 'float',
                        'sog': 'float',
                        'cog': 'float',
                        'heading': 'float',
                        'dt_pos_utc': 'time'}
-    #
-    for _ in keys_data.values:
-        if _ in parameter_needs:
-            print(_, parameter_needs[_])
-            data_temp = df.loc[0:next_ship_index.index[0] - 1:, [_]]
-            dd_use = data_temp[_].str.split("\t", n=1, expand=True)
-            if parameter_needs[_] == 'float' or parameter_needs[_] == 'int':
-                formatdata = list(map(eval, dd_use[1][:].values))
-            elif parameter_needs[_] == 'str':
-                formatdata = dd_use[1][:].values
-            elif parameter_needs[_] == 'time':
-                formatdata = [datetime.datetime.strptime(tem_str, "%Y-%m-%d %H:%M:%S") for tem_str in dd_use[1][:].values]
-            else:
-                print('error: transform the format of data')
-            print('&' * 30, _)
-            print(dd_use[1][:].values)
-            print(formatdata[4:10])
+    # shipdata_base: use shipdata_base to save the ship infomations form AIS
+    # This is the dict structure of shipdata_base
+    # name     keys         type   list[:]
+    #       |- vessel_type  str
+    # mmsi -|- length       str
+    # (dict)|- width        str
+    #       |- longitude    list    float
+    #       |- latitude     list    float
+    #       |- sog          list    float
+    #       |- cog          list    float
+    #       |- heading      list    float
+    #       |- dt_pos_utc   list    datetime
 
+    shipdata_base = dict()
+    #inns:index_number_ship
+    for inns in range(0, ship_spiltindex.size-1):
+        for _ in keys_data.values:
+            if _ in parameter_needs:
+                print(_, parameter_needs[_])
+                data_temp = df.loc[ship_spiltindex[inns]+1:ship_spiltindex[inns+1]-1, [_]]
+                dd_use = data_temp[_].str.split("\t", n=1, expand=True)
+                if parameter_needs[_] == 'float' or parameter_needs[_] == 'int':
+                    formatdata = list(map(eval, dd_use[1][:].values))
+                    if _ == 'mmsi':
+                        ship_mmsi = str(formatdata[0])
+                        shipdata_base[ship_mmsi] = dict()
+                elif parameter_needs[_] == 'str':
+                    formatdata = dd_use[1][:].values
+                    #
+                    shipdata_base[ship_mmsi][_] = formatdata[0]
+                elif parameter_needs[_] == 'time':
+                    formatdata = [datetime.datetime.strptime(tem_str, "%Y-%m-%d %H:%M:%S") for tem_str in dd_use[1][:].values]
+                else:
+                    print('error: transform the format of data')
+                if _ != 'mmsi' and parameter_needs[_] != 'str':
+                    shipdata_base[ship_mmsi][_] = formatdata
+    return shipdata_base
 
 
 

@@ -17,4 +17,5 @@ from developfile.tools import read_ais
 
 input_url = '../input/ais_data.xlsx'
 a = read_ais(input_url)
+print(a)
 
