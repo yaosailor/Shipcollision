@@ -49,7 +49,7 @@ length = 125
 u = 1.              # x-position of the center
 v = 0.5             # y-position of the center
 b = 7*length        # radius on the x-axis
-a = 3.5*length      # radius on the y-axis
+a = 3.5*length      # radius on the y-axisplt.show()
 t_rot = pi*250/180        # rotation angle
 fig, ax = plt.subplots()
 t = np.linspace(0, 2*pi, 100)
@@ -67,4 +67,3 @@ plt.plot(u+Ell[0, :], v+Ell[1, :])     # initial ellipse
 plt.plot(u+Ell_rot[0, :], v+Ell_rot[1, :], 'k' )    # rotated ellipse
 plt.grid(color='lightgray', linestyle='--')
 ax.set_aspect(1.0)
-plt.show()
