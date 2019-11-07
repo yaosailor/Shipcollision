@@ -72,7 +72,7 @@ def read_ais(input_url):
                        'cog': 'float',
                        'heading': 'float',
                        'dt_pos_utc': 'time'}
-    # shipdata_base: use shipdata_base to save the ship infomations form AIS
+    # shipdata_base: use shipdata_base to save the ship infomations from AIS
     # This is the dict structure of shipdata_base
     # name     keys         type   list[:]
     #       |- vessel_type  str
@@ -90,7 +90,7 @@ def read_ais(input_url):
     for inns in range(0, ship_spiltindex.size-1):
         for _ in keys_data.values:
             if _ in parameter_needs:
-                print(_, parameter_needs[_])
+                # print(_, parameter_needs[_])
                 data_temp = df.loc[ship_spiltindex[inns]+1:ship_spiltindex[inns+1]-1, [_]]
                 dd_use = data_temp[_].str.split("\t", n=1, expand=True)
                 if parameter_needs[_] == 'float' or parameter_needs[_] == 'int':
