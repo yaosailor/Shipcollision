@@ -8,9 +8,9 @@
 
 import numpy as np
 from matplotlib import pyplot as plt
-from math import pi, cos, sin
 from matplotlib.path import Path
 from matplotlib.patches import PathPatch
+from math import pi, sqrt, cos, sin, log10 as lg, log as ln
 
 '''
 This work is based on ship safety domains approach.
@@ -61,7 +61,7 @@ Parameters:
 *        [1] Wang, N., 2013. A novel analytical framework for dynamic quaternion ship domains.J. Navig. 66, 265–281.
 -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
 '''
-from matplotlib.patches import Ellipse
+
 
 def fujidomain(own_ship_xy, length, cog=0):
     """
@@ -121,6 +121,62 @@ def goodwindomain(own_ship_xy, cog):
     ship_sector = sector.copy()
     return ship_sector
 
+
+def wangdomain(own_ship_xy, length, vown, cog=0, k_shape=2, r_static=0.5):
+    """
+    Parameters
+    ----------
+    own_ship_xy : (float, float)
+        xy coordinates of ellipse centre.
+    cog : scalar, optional
+        Rotation in degrees anti-clockwise.
+    vown:  is the own ship speed represented in knots
+    k_shape :shape index
+    """
+    # Constant
+    r0 = 0.5
+    # L is the own ship length,
+    # k_AD and k_DT represent gains of the advance, AD ,
+    # and the tactical diameter, D T ,
+    k_ad = 10 ** (0.359 * lg(vown) + 0.0952)
+    k_dt = 10 ** (0.541 * lg(vown) - 0.0795)
+    R_fore = (1 + 1.34 * sqrt((k_ad) ** 2 + (k_dt / 2) ** 2)) * length
+    R_aft = (1 + 0.67 * sqrt((k_ad) ** 2 + (k_dt / 2) ** 2)) * length
+    R_starb = (0.2 + k_dt) * length
+    R_port = (0.2 + 0.75 * k_dt) * length
+
+    R = np.array((R_fore, R_aft, R_starb, R_port))
+    r_fuzzy = ((ln(1 / r_static)) / (ln(1 / r0))) ** (1 / k_shape)
+    R_fuzzy = r_fuzzy * R
+    # y_1: first quadrant  x >= 0 y >= 0
+    x_max = R_fuzzy[0]
+    x_min = -R_fuzzy[1]
+    x_serises_plus = np.linspace(0, x_max, 80)
+    x_serises_minus = np.linspace(x_min, -0.01, 80)
+    # x>=0, y>=0
+    y_1 = R_fuzzy[2] * pow((1 - (x_serises_plus / R_fuzzy[0]) ** k_shape), 1 / k_shape)
+    y_4 = R_fuzzy[3] * -pow((1 - (x_serises_plus / R_fuzzy[0]) ** k_shape), 1 / k_shape)
+    y_2 = R_fuzzy[2] * pow((1 - (-x_serises_minus / R_fuzzy[1]) ** k_shape), 1 / k_shape)
+    y_3 = R_fuzzy[3] * -pow((1 - (-x_serises_minus / R_fuzzy[1]) ** k_shape), 1 / k_shape)
+    # stack the column
+    curve1 = np.column_stack((x_serises_plus, y_1))
+    curve2 = np.column_stack((x_serises_minus, y_2))
+    curve3 = np.column_stack((x_serises_minus, y_3))
+    curve4 = np.column_stack((x_serises_plus, y_4))
+    # Primacy connection
+    curve4 = np.flipud(curve4)
+    curve3 = np.flipud(curve3)
+    # cat the data series to one curve.
+    curves = np.row_stack((curve1, curve4, curve3, curve2)).T
+    curves[0, :] += own_ship_xy[0]
+    curves[1, :] += own_ship_xy[1]
+    #
+    t_rot = pi * cog / 180 - pi / 2
+    R_rot = np.array([[cos(t_rot), sin(t_rot)], [-sin(t_rot), cos(t_rot)]])
+    for i in range(curves.shape[1]):
+        curves[:, i] = np.dot(R_rot, curves[:, i])
+    return curves
+
 def ship_shap_base(length, width):
     #ship_path = [[0, length/2], [width/2, length/10], [width/2, -length/2],
     #             [-width/2, -length/2], [width/2, -length/10], [0, length/2]]
@@ -140,11 +196,12 @@ def ship_shape(ship_path, cog):
 
 if __name__ == '__main__':
     # - ship infomation
-    length = 120.0
+    length = 175
     width = 30.0
     ownship_x = 100.0
-    ownship_y = 0.5
-    cog = 0
+    ownship_y = 21
+    cog = 210
+    v_speed = 15
     # - process
     ship_path_base = ship_shap_base(length, width)
     ship_path = ship_shape(ship_path_base.T, cog)
@@ -155,6 +212,8 @@ if __name__ == '__main__':
     # calculate the domain
     domain_ship = fujidomain((ownship_x, ownship_y), length, cog)
     domain_ship_g = goodwindomain((ownship_x, ownship_y), cog)
+    domain_ship_w = wangdomain((ownship_x, ownship_y), length, v_speed, cog)
+    domain_ship_w2 = wangdomain((ownship_x, ownship_y), length, v_speed, cog, r_static=0.8)
 
     # ----------------------------#
     #  plot the ship domain
@@ -164,8 +223,15 @@ if __name__ == '__main__':
     #
     fig, ax = plt.subplots()
     ax.add_patch(pathpatch)
-    plt.plot(domain_ship[0], domain_ship[1], 'gray' )    # rotated ellipse
-    plt.plot(domain_ship_g[0], domain_ship_g[1], 'blue' )    # rotated ellipse
+    line1, = plt.plot(domain_ship[0], domain_ship[1], 'gray')
+    line2, =plt.plot(domain_ship_g[0], domain_ship_g[1], 'blue')
+    line3, =plt.plot(domain_ship_w[0], domain_ship_w[1], 'r')
+    line4, =plt.plot(domain_ship_w2[0], domain_ship_w2[1], 'purple')
+
     plt.grid(color='lightgray', linestyle='--')
+    plt.legend(handles=[line1, line2, line3, line4],
+               labels=['fuji 1971', 'goodwin 1975', 'wang 2012 r=0.5',
+                       'wang 2012 r=0.8'],
+               loc='upper right')
     ax.set_aspect(1.0)
     plt.show()
