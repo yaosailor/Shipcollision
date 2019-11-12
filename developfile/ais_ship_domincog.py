@@ -5,13 +5,6 @@
 @file: ais_ship_domincog.py
 @time: 2019-11-09 15:59
 """
-#!usr/bin/env python
-#-*- coding:utf-8 _*-
-"""
-@author:yaochenyang
-@file: aisdoamintest.py
-@time: 2019-11-09 10:30
-"""
 import os
 current_path = os.path.dirname(os.path.abspath(__file__))
 project_path = os.path.abspath(os.path.join(current_path, '../'))
@@ -79,6 +72,7 @@ plt.legend(handles=[line1, line2, line3, line4],
                    'wang 2012 r=0.8'],
            loc='upper right', fontsize=10)
 # set the sog
+#ax.set_facecolor('none')
 ax.grid(False)
 
 

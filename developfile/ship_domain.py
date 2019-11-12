@@ -104,7 +104,7 @@ def goodwindomain(own_ship_xy, cog):
     #   defalut values is 100, that means every sector have 100 points.
     #   sector_tem: (x,y), size:(2, number_of_scetor)
     number_of_scetor = 100
-    radius_domain =[1.852*1000*x for x in [0.85, 0.4, 0.7]]
+    radius_domain =[1.852*1000*x for x in [0.85, 0.4, 0.75]] # 0.75
     thita_deg = pi * thita / 180
     sector = np.zeros(shape=(2, 3 * number_of_scetor + 1))
     # calculate the sectors
@@ -207,8 +207,8 @@ if __name__ == '__main__':
     width = 30.0
     ownship_x = 400.0
     ownship_y = 21
-    cog = 210
-    v_speed = 0
+    cog = 50
+    v_speed = 50
     # - process
     ship_path_base = ship_shap_base(length, width)
     ship_path = ship_shape(ship_path_base.T, cog)

@@ -52,7 +52,8 @@ import numpy as np
 
 
 def read_ais(input_url):
-    df = pd.read_excel(input_url)
+    #df = pd.read_excel(input_url)
+    df = pd.read_csv(input_url)
     keys_data = df.keys()
     # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_excel.html
     # next_ship_index: find the index of title
@@ -84,9 +85,10 @@ def read_ais(input_url):
     #       |- cog          list    float
     #       |- heading      list    float
     #       |- dt_pos_utc   list    datetime
-
+    bugmodel = False
     shipdata_base = dict()
-    #inns:index_number_ship
+    number_error = 0
+    # inns:index_number_ship
     for inns in range(0, ship_spiltindex.size-1):
         for _ in keys_data.values:
             if _ in parameter_needs:
@@ -94,7 +96,16 @@ def read_ais(input_url):
                 data_temp = df.loc[ship_spiltindex[inns]+1:ship_spiltindex[inns+1]-1, [_]]
                 dd_use = data_temp[_].str.split("\t", n=1, expand=True)
                 if parameter_needs[_] == 'float' or parameter_needs[_] == 'int':
-                    formatdata = list(map(eval, dd_use[1][:].values))
+                    try:
+                        formatdata = list(map(eval, dd_use[1][:].values))
+                    # Read error ：due to error format
+                    except Exception as inst:
+                        if bugmodel is True:
+                            print("OS error: {0}".format(inst), 'mmsi:{}'.format(str(ship_mmsi)),
+                                  'erro', 'ship_spiltindex: ', ship_spiltindex[inns], 'parameter: ', _,
+                                  'ship type: ', df['vessel_type'][ship_spiltindex[inns]+1])
+                        number_error += 1
+                        break
                     if _ == 'mmsi':
                         ship_mmsi = str(formatdata[0])
                         shipdata_base[ship_mmsi] = dict()
@@ -108,6 +119,8 @@ def read_ais(input_url):
                     print('error: transform the format of data')
                 if _ != 'mmsi' and parameter_needs[_] != 'str':
                     shipdata_base[ship_mmsi][_] = formatdata
+    if bugmodel is True:
+        print(ship_spiltindex.size, 'error infomation: ', number_error, number_error/ship_spiltindex.size)
     return shipdata_base
 
 
