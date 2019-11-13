@@ -112,6 +112,7 @@ def read_ais(input_url):
                                   'erro', 'ship_spiltindex: ', ship_spiltindex[inns], 'parameter: ', _,
                                   'ship type: ', df['vessel_type'][ship_spiltindex[inns]+1])
                         number_error += 1
+                        shipdata_base.pop(ship_mmsi)
                         break
                     if _ == 'mmsi':
                         ship_mmsi = str(formatdata[0])
