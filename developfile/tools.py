@@ -8,7 +8,6 @@
 import pandas as pd
 import datetime
 import numpy as np
-import collections
 
 '''
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -55,13 +54,15 @@ import collections
 def read_ais(input_url):
     #df = pd.read_excel(input_url)
     df = pd.read_csv(input_url)
-    keys_data = df.keys()
     # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_excel.html
     # next_ship_index: find the index of title
     # because the fist title is not include the varible, I add the first index '0' and last index  into the ship_spiltindex
     next_ship_index = df.loc[df['FID'] == 'FID']
     ship_spiltindex = next_ship_index.index.values
     ship_spiltindex = np.insert(ship_spiltindex, [0, len(ship_spiltindex)], [-1, df.shape[0]])
+    # changed the order
+    df = df[['mmsi', 'vessel_type', 'length', 'width', 'sog', 'cog', 'longitude', 'latitude', 'heading', 'dt_pos_utc']]
+    keys_data = df.keys()
     # These are the parameters we need
     # In order to distinguish list and others, I changed the type of length and width into 'string' instead of 'float'.
     # Considering the demand that we should eliminate information with a speed of 0. First we should get the mmsi, then
@@ -76,7 +77,6 @@ def read_ais(input_url):
                        'cog': 'float',
                        'heading': 'float',
                        'dt_pos_utc': 'time'}
-    parameter_needs = collections.OrderedDict(parameter_needs)
     # Filter by using advanced criteria（vessel_type >> sog）
     type_criteria = ['Cargo', 'Passenger', 'SAR', 'Tanker']
     sog_criteria = [0, 50]  # (min_speed, max_speed)knots
@@ -116,6 +116,10 @@ def read_ais(input_url):
                     if _ == 'mmsi':
                         ship_mmsi = str(formatdata[0])
                         shipdata_base[ship_mmsi] = dict()
+                    if _ == 'sog':
+                        formatdata = np.array(formatdata)
+                        index_filter_ship, = np.where((formatdata > 0.) & (formatdata < 50.))
+
                 elif parameter_needs[_] == 'str':
                     formatdata = dd_use[1][:].values
                     shipdata_base[ship_mmsi][_] = formatdata[0]
@@ -128,7 +132,8 @@ def read_ais(input_url):
                 else:
                     print('error: transform the format of data')
                 if _ != 'mmsi' and parameter_needs[_] != 'str':
-                    shipdata_base[ship_mmsi][_] = formatdata
+                    formatdata_af = [formatdata[x] for x in index_filter_ship]
+                    shipdata_base[ship_mmsi][_] = formatdata_af
     if bugmodel is True:
         print(ship_spiltindex.size, 'error infomation: ', number_error, number_error/ship_spiltindex.size)
     return shipdata_base
