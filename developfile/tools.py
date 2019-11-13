@@ -135,6 +135,12 @@ def read_ais(input_url):
                 if _ != 'mmsi' and parameter_needs[_] != 'str':
                     formatdata_af = [formatdata[x] for x in index_filter_ship]
                     shipdata_base[ship_mmsi][_] = formatdata_af
+                    # if the length of index_filter_ship equal the length of formatdata,
+                    # it means that the ship didn't move during the whole time.
+                    if not formatdata_af:
+                        shipdata_base.pop(ship_mmsi)
+                        break
+
     if bugmodel is True:
         print(ship_spiltindex.size, 'error infomation: ', number_error, number_error/ship_spiltindex.size)
     return shipdata_base
