@@ -8,9 +8,9 @@
 import os
 current_path = os.path.dirname(os.path.abspath(__file__))
 project_path = os.path.abspath(os.path.join(current_path, '../'))
-#from developfile.ship_domain import fujidomain, wangdomain,goodwindomain
-#from developfile.ship_domain import ship_shap_base, ship_shape
-from tools import read_ais
+# from developfile.ship_domain import fujidomain, wangdomain,goodwindomain
+# from developfile.ship_domain import ship_shap_base, ship_shape
+from tools import read_ais, freq_vessel_type
 import time
 '''
 This script is used for test the dynamic ship domain base on AIS data.
@@ -21,7 +21,7 @@ from functools import wraps
 
 def main():
     # setting the input url
-    input_url = '/Users/yaochenyang/Desktop/aischangjiang/6.csv'
+    input_url = '../input/ais_data.xlsx'
     alpha0 = False
     ship_info = read_ais(input_url)
     keys = list(ship_info.keys())
@@ -33,7 +33,8 @@ def main():
     sog_ship = ship_info[keys[1]]['sog']
     cog_ship = ship_info[keys[1]]['cog']
     time = ship_info[keys[1]]['dt_pos_utc']
-    print(keys)
+    freq_vessel_type(ship_info)
+
 
 if __name__ == '__main__':
     main()

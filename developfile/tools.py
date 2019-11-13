@@ -8,6 +8,7 @@
 import pandas as pd
 import datetime
 import numpy as np
+import collections
 
 '''
 *-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -63,16 +64,22 @@ def read_ais(input_url):
     ship_spiltindex = np.insert(ship_spiltindex, [0, len(ship_spiltindex)], [-1, df.shape[0]])
     # These are the parameters we need
     # In order to distinguish list and others, I changed the type of length and width into 'string' instead of 'float'.
+    # Considering the demand that we should eliminate information with a speed of 0. First we should get the mmsi, then
+    # We judge according to the speed of the ship(sog).
     parameter_needs = {'mmsi': 'int',
                        'vessel_type': 'str',
+                       'sog': 'float',
                        'length': 'str',
                        'width': 'str',
                        'longitude': 'float',
                        'latitude': 'float',
-                       'sog': 'float',
                        'cog': 'float',
                        'heading': 'float',
                        'dt_pos_utc': 'time'}
+    parameter_needs = collections.OrderedDict(parameter_needs)
+    # Filter by using advanced criteria（vessel_type >> sog）
+    type_criteria = ['Cargo', 'Passenger', 'SAR', 'Tanker']
+    sog_criteria = [0, 50]  # (min_speed, max_speed)knots
     # shipdata_base: use shipdata_base to save the ship infomations from AIS
     # This is the dict structure of shipdata_base
     # name     keys         type   list[:]
@@ -111,8 +118,11 @@ def read_ais(input_url):
                         shipdata_base[ship_mmsi] = dict()
                 elif parameter_needs[_] == 'str':
                     formatdata = dd_use[1][:].values
-                    #
                     shipdata_base[ship_mmsi][_] = formatdata[0]
+                    # Filter and delete the Useless information
+                    if _ == 'vessel_type' and formatdata[0] not in type_criteria:
+                            shipdata_base.pop(ship_mmsi)
+                            break
                 elif parameter_needs[_] == 'time':
                     formatdata = [datetime.datetime.strptime(tem_str, "%Y-%m-%d %H:%M:%S") for tem_str in dd_use[1][:].values]
                 else:
@@ -124,5 +134,14 @@ def read_ais(input_url):
     return shipdata_base
 
 
-
-
+def freq_vessel_type(ship_info):
+    keys = list(ship_info.keys())
+    freq = {}
+    for index in keys:
+        sog_ship = ship_info[index]['vessel_type']
+        if sog_ship not in list(freq.keys()):
+            freq[sog_ship] = 1
+        else:
+            freq[sog_ship] += 1
+    for _ in freq:
+        print(_, ': ', freq[_])
