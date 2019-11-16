@@ -10,6 +10,7 @@ import datetime
 import json
 import numpy as np
 import time
+
 '''
 def read_ais()
 
@@ -233,3 +234,21 @@ def cal_area_id(lat_tem, lon_tem, study_area=False):
     jndex = (lon_tem - 90) // 0.5
     area_id = int((int(index)) * len(longitude) + jndex)
     return area_id
+
+
+def time2minutes(date_re, minutes_set=5):
+    time_format = "%Y-%m-%d %H:%M:%S"
+    delta_set = 60 * minutes_set
+    if isinstance(date_re, datetime.datetime):
+        timeArray_re = date_re.timestamp()
+    else:
+        timeArray_re = datetime.datetime.strptime(date_re, time_format).timestamp()
+    Quotient_time = timeArray_re//(60*minutes_set)
+    residue_time = timeArray_re % 60 * minutes_set
+    if residue_time <= (delta_set/2):
+        c = Quotient_time * delta_set
+    else:
+        c = (1+Quotient_time) * delta_set
+
+    final = datetime.datetime.fromtimestamp(c)
+    return final
