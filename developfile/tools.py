@@ -249,6 +249,5 @@ def time2minutes(date_re, minutes_set=5):
         c = Quotient_time * delta_set
     else:
         c = (1+Quotient_time) * delta_set
-
     final = datetime.datetime.fromtimestamp(c)
     return final
