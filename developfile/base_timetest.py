@@ -49,13 +49,15 @@ for info in ship_info:
             num += 1
             lon_tem = ship_info[info]['longitude'][index]
             lat_tem = ship_info[info]['latitude'][index]
-            area_id = cal_area_id(lat_tem,lon_tem)
-            #
+            area_id = cal_area_id(lat_tem, lon_tem)
+            if area_id is None:
+                break
             tem_dict = {'mmsi': info, 'longitude': lon_tem,
                         'latitude': lat_tem,
                         'sog': ship_info[info]['sog'][index],
                         'cog': ship_info[info]['cog'][index]}
             #
+
             if area_id not in data_ship[index_key]:
                 data_ship[index_key][area_id] = []
             data_ship[index_key][area_id].append(tem_dict)

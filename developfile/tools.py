@@ -222,6 +222,11 @@ def cal_area_id(lat_tem, lon_tem, study_area=False):
     if not study_area:
         study_area = [0., 45., 90., 150.]
     deta = 0.5  # Spatial resolution
+    #
+    if lat_tem < study_area[0] or lat_tem > study_area[1]:
+        return None
+    if lon_tem < study_area[2] or lon_tem > study_area[3]:
+        return None
     # latitude = np.round(np.arange(study_area[0], study_area[1], deta), 2)
     longitude = np.round(np.arange(study_area[2], study_area[3], deta), 2)
     index = (lat_tem - 0) // 0.5
