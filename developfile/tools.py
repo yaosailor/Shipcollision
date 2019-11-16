@@ -6,11 +6,12 @@
 @time: 2019-11-07 10:33
 """
 import pandas as pd
-import datetime
 import json
 import numpy as np
 import time
-
+import pickle
+from datetime import datetime, timedelta
+from collections import OrderedDict
 '''
 def read_ais()
 
@@ -133,7 +134,7 @@ def read_ais(input_url):
                             shipdata_base.pop(ship_mmsi)
                             break
                 elif parameter_needs[_] == 'time':
-                    formatdata = [datetime.datetime.strptime(tem_str, "%Y-%m-%d %H:%M:%S") for tem_str in dd_use[1][:].values]
+                    formatdata = [datetime.strptime(tem_str, "%Y-%m-%d %H:%M:%S") for tem_str in dd_use[1][:].values]
                 else:
                     print('error: transform the format of data')
                 if _ != 'mmsi' and parameter_needs[_] != 'str':
@@ -239,15 +240,70 @@ def cal_area_id(lat_tem, lon_tem, study_area=False):
 def time2minutes(date_re, minutes_set=5):
     time_format = "%Y-%m-%d %H:%M:%S"
     delta_set = 60 * minutes_set
-    if isinstance(date_re, datetime.datetime):
+    if isinstance(date_re, datetime):
         timeArray_re = date_re.timestamp()
     else:
-        timeArray_re = datetime.datetime.strptime(date_re, time_format).timestamp()
+        timeArray_re = datetime.strptime(date_re, time_format).timestamp()
     Quotient_time = timeArray_re//(60*minutes_set)
-    residue_time = timeArray_re % 60 * minutes_set
+    residue_time = timeArray_re % (60*minutes_set)
     if residue_time <= (delta_set/2):
         c = Quotient_time * delta_set
     else:
         c = (1+Quotient_time) * delta_set
-    final = datetime.datetime.fromtimestamp(c)
-    return final
+    final = datetime.fromtimestamp(c)
+    return final, residue_time
+
+
+def time_array(inputfile):
+    start = time.clock()
+    date_ship = OrderedDict()
+    date_start = "2019-10-09 00:00:00"
+    date_end = "2019-10-24 13:21:16"
+    time_format = "%Y-%m-%d %H:%M:%S"
+    minutes_set = 5
+    # create the dict of time str
+    timeArray_start = datetime.strptime(date_start, time_format)
+    timeArray_end = datetime.strptime(date_end, time_format)
+    timeArray_reference = timeArray_start
+    while timeArray_reference <= timeArray_end:
+        date_ship[timeArray_reference.strftime(time_format)] = dict()
+        timeArray_reference += timedelta(minutes=minutes_set)
+    # read the data of ships
+    with open(inputfile, "rb") as f:
+        ship_info = pickle.load(f)
+    num = 0
+    # screen the time of ship
+    for info_mmsi in ship_info:
+        total_ship = OrderedDict()
+        delta_set = 60 * minutes_set
+        for index_ii in range(0, len(ship_info[info_mmsi]['dt_pos_utc'])):
+            ii = ship_info[info_mmsi]['dt_pos_utc'][index_ii]
+            afminset, residue_time = time2minutes(ii)
+            afminset = afminset.strftime(time_format)
+            if afminset not in total_ship:
+                total_ship[afminset] = [ii, residue_time, index_ii]
+            elif afminset in total_ship:
+                if residue_time < total_ship[afminset][1]:
+                    total_ship[afminset] = [ii, residue_time, index_ii]
+        num += 1
+        solo_ship_index = []
+        for time_key in total_ship:
+            tys_index = total_ship[time_key][2]
+            # print(tys_index,total_ship[time_key][0])
+            # time_key, index_ii,
+            # area_id judge each available information
+            lat_tem = ship_info[info_mmsi]['latitude'][tys_index]
+            lon_tem = ship_info[info_mmsi]['longitude'][tys_index]
+            area_id = cal_area_id(lat_tem, lon_tem)
+            if area_id is None:
+                break
+            tem_dict = {'mmsi': info_mmsi, 'longitude': lon_tem,
+                        'latitude': lat_tem,
+                        'sog': ship_info[info_mmsi]['sog'][tys_index],
+                        'cog': ship_info[info_mmsi]['cog'][tys_index]}
+            if area_id not in date_ship[time_key]:
+                date_ship[time_key][area_id] = []
+            date_ship[time_key][area_id].append(tem_dict)
+    end = time.clock()
+    print('Running time:', (end - start))
+    return date_ship
