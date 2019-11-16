@@ -208,9 +208,23 @@ def setup_mesh(study_area=False):
                     list_area["Flag"] = 1
             lists.append(list_area)
     # save the mesh infomation as .json format
-    with open("../output/Research_area_code.json", "w", encoding="UTF-8") as f_dump:
+    output_meshfile = '../output/Research_area_code.json'
+    with open(output_meshfile, "w", encoding="UTF-8") as f_dump:
         s_dump = json.dump(lists, f_dump)
     end = time.clock()
     print(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", "\n", "   succesful complete the task ", "\n",
           "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     print('Running time:', (end - start))
+    return output_meshfile
+
+
+def cal_area_id(lat_tem, lon_tem, study_area=False):
+    if not study_area:
+        study_area = [0., 45., 90., 150.]
+    deta = 0.5  # Spatial resolution
+    # latitude = np.round(np.arange(study_area[0], study_area[1], deta), 2)
+    longitude = np.round(np.arange(study_area[2], study_area[3], deta), 2)
+    index = (lat_tem - 0) // 0.5
+    jndex = (lon_tem - 90) // 0.5
+    area_id = int((int(index)) * len(longitude) + jndex)
+    return area_id
