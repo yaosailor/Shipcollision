@@ -254,11 +254,24 @@ def time2minutes(date_re, minutes_set=5):
     return final, residue_time
 
 
-def time_array(inputfile):
+def time_array(inputfile,date_start, date_end):
+    '''
+    :param inputfile:
+    :param date_start:
+    :param date_end:
+    :return: date_ship
+    # date_ship: use date_ship to organize information by time
+    # This is the dict structure of date_ship
+    # name     keys             list[0]
+    #       |- area_id    -|-     mmsi
+    # time -|-    ·        |-     longitude
+    # (dict)|-    ·        |-     latitude
+    #       |-    ·        |-     sog
+    #       |- area_id     |-     cog
+
+    '''
     start = time.clock()
     date_ship = OrderedDict()
-    date_start = "2019-10-09 00:00:00"
-    date_end = "2019-10-24 13:21:16"
     time_format = "%Y-%m-%d %H:%M:%S"
     minutes_set = 5
     # create the dict of time str
@@ -273,6 +286,7 @@ def time_array(inputfile):
         ship_info = pickle.load(f)
     num = 0
     # screen the time of ship
+    # total_ship: save data closest to standardization time.
     for info_mmsi in ship_info:
         total_ship = OrderedDict()
         delta_set = 60 * minutes_set
@@ -287,6 +301,7 @@ def time_array(inputfile):
                     total_ship[afminset] = [ii, residue_time, index_ii]
         num += 1
         solo_ship_index = []
+        # get the index of needed information depend on timeseries.
         for time_key in total_ship:
             tys_index = total_ship[time_key][2]
             # print(tys_index,total_ship[time_key][0])

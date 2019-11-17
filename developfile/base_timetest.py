@@ -60,11 +60,9 @@ def old_method(inputfile):
                 date_ship[index_key][area_id].append(tem_dict)
     return date_ship
 
-def time_array(inputfile):
+def time_array(inputfile, date_start, date_end):
     start = time.clock()
     date_ship = OrderedDict()
-    date_start = "2019-10-09 00:00:00"
-    date_end = "2019-10-24 13:21:16"
     time_format = "%Y-%m-%d %H:%M:%S"
     minutes_set = 5
     # create the dict of time str
@@ -118,8 +116,10 @@ def time_array(inputfile):
 
 if __name__ == '__main__':
     inputfile = '../output/ship_info.pkl'
-    # date_ship = old_method(inputfile)
-    date_ship = time_array(inputfile)
+    date_start = "2019-10-09 00:00:00"
+    date_end = "2019-10-24 13:21:16"
+    # date_ship = old_method(inputfile,)
+    date_ship = time_array(inputfile, date_start, date_end)
     srcfile = "ship_area_info_new.pkl"
     with open(srcfile, "wb") as f:
         pickle.dump(date_ship, f)
