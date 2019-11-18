@@ -12,6 +12,9 @@ import time
 import pickle
 from datetime import datetime, timedelta
 from collections import OrderedDict
+from fastkml import kml
+from setting import study_area as study_area_default
+
 '''
 def read_ais()
 
@@ -171,7 +174,7 @@ def setup_mesh(study_area=False):
     # [latitude_min, latitude_max, longitude_min, longitude_max]
     # default study_area = [0., 45., 90., 150.]
     if not study_area:
-        study_area = [0., 45., 90., 150.]
+        study_area = study_area_default
     deta = 0.5  # Spatial resolution
     latitude = np.round(np.arange(study_area[0], study_area[1], deta), 2)
     longitude = np.round(np.arange(study_area[2], study_area[3], deta), 2)
@@ -222,7 +225,7 @@ def setup_mesh(study_area=False):
 
 def cal_area_id(lat_tem, lon_tem, study_area=False):
     if not study_area:
-        study_area = [0., 45., 90., 150.]
+        study_area = study_area_default
     deta = 0.5  # Spatial resolution
     #
     if lat_tem < study_area[0] or lat_tem > study_area[1]:
@@ -231,8 +234,8 @@ def cal_area_id(lat_tem, lon_tem, study_area=False):
         return None
     # latitude = np.round(np.arange(study_area[0], study_area[1], deta), 2)
     longitude = np.round(np.arange(study_area[2], study_area[3], deta), 2)
-    index = (lat_tem - 0) // 0.5
-    jndex = (lon_tem - 90) // 0.5
+    index = (lat_tem - study_area[0]) // 0.5
+    jndex = (lon_tem - study_area[2]) // 0.5
     area_id = int((int(index)) * len(longitude) + jndex)
     return area_id
 
@@ -322,3 +325,30 @@ def time_array(inputfile,date_start, date_end):
     end = time.clock()
     print('Running time:', (end - start))
     return date_ship
+
+
+def kml2path(url='None'):
+    # https://fastkml.readthedocs.io/en/latest/usage_guide.html
+    # https://github.com/cleder/fastkml/issues/57
+    # https://github.com/kennethreitz/requests-html/issues/145 !!!
+    '''
+     File "src/lxml/etree.pyx", line 3213, in lxml.etree.fromstring
+      File "src/lxml/parser.pxi", line 1872, in lxml.etree._parseMemoryDocument
+    ValueError: Unicode strings with encoding declaration are not supported. Please use bytes input or XML fragments without declaration.
+    Process finished with exit code 1
+    '''
+    try:
+        kml_file = url
+        with open(kml_file, 'rt', encoding="UTF-8") as myfile:
+            doc = myfile.read().encode('utf-8')
+    except:
+        kml_file = '../input/inland_waterway_channel.kml'
+        with open(kml_file, 'rt', encoding="UTF-8") as myfile:
+            doc = myfile.read().encode('utf-8')
+    k = kml.KML()
+    k.from_string(doc)
+    features = list(k.features())
+    resulet = features[0]._features[0].geometry.xy
+    resulet = [(resulet[0][_], resulet[1][_]) for _ in range(0, len(resulet[0]))]
+    return resulet
+

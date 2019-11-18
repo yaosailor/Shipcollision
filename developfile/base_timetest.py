@@ -10,7 +10,9 @@ from datetime import datetime, timedelta
 import time
 import numpy as np
 from collections import OrderedDict
-from tools import cal_area_id, time2minutes
+from shapely.geometry.polygon import Polygon
+from shapely.geometry import Point
+from tools import cal_area_id, time2minutes, kml2path
 '''
 Organize ship data
     1 Create a variable that take time as keys
@@ -60,11 +62,13 @@ def old_method(inputfile):
                 date_ship[index_key][area_id].append(tem_dict)
     return date_ship
 
-def time_array(inputfile, date_start, date_end):
+def time_array(inputfile, date_start, date_end, openwater_sets):
+
     start = time.clock()
     date_ship = OrderedDict()
     time_format = "%Y-%m-%d %H:%M:%S"
     minutes_set = 5
+    inland_waterway = False
     # create the dict of time str
     timeArray_start = datetime.strptime(date_start, time_format)
     timeArray_end = datetime.strptime(date_end, time_format)
@@ -76,6 +80,8 @@ def time_array(inputfile, date_start, date_end):
     with open(inputfile, "rb") as f:
         ship_info = pickle.load(f)
     num = 0
+    num_outside = 0
+    area_idnum = 0
     # screen the time of ship
     for info_mmsi in ship_info:
         total_ship = OrderedDict()
@@ -100,16 +106,30 @@ def time_array(inputfile, date_start, date_end):
             lon_tem = ship_info[info_mmsi]['longitude'][tys_index]
             area_id = cal_area_id(lat_tem, lon_tem)
             if area_id is None:
-                break
-            tem_dict = {'mmsi': info_mmsi, 'longitude': lon_tem,
-                        'latitude': lat_tem,
-                        'sog': ship_info[info_mmsi]['sog'][tys_index],
-                        'cog': ship_info[info_mmsi]['cog'][tys_index]}
-            if area_id not in date_ship[time_key]:
-                date_ship[time_key][area_id] = []
-            date_ship[time_key][area_id].append(tem_dict)
+                area_idnum += 1
+                continue
+            #
+            if openwater_sets['flag_openwater'] is True:
+                inland_waterway = openwater_sets['inland_waterway_path'].contains(Point(lon_tem, lat_tem))
+            #
+            if inland_waterway is False:
+                tem_dict = {'mmsi': info_mmsi, 'longitude': lon_tem,
+                            'latitude': lat_tem,
+                            'sog': ship_info[info_mmsi]['sog'][tys_index],
+                            'cog': ship_info[info_mmsi]['cog'][tys_index],
+                            'length':ship_info[info_mmsi]['length'],
+                            'width':ship_info[info_mmsi]['width']}
+                if area_id not in date_ship[time_key]:
+                    date_ship[time_key][area_id] = []
+                date_ship[time_key][area_id].append(tem_dict)
+            else:
+                num_outside += 1
+                continue
     end = time.clock()
     print('Running time:', (end - start))
+    print('num_outside: ', num_outside)
+    print('area_idnum', area_idnum)
+    print(num)
     return date_ship
         # extract the data
 
@@ -119,7 +139,12 @@ if __name__ == '__main__':
     date_start = "2019-10-09 00:00:00"
     date_end = "2019-10-24 13:21:16"
     # date_ship = old_method(inputfile,)
-    date_ship = time_array(inputfile, date_start, date_end)
+    inland_waterway_path = kml2path()
+    p1 = Polygon(inland_waterway_path)
+    flag_openwater = False
+    openwater_sets = {'flag_openwater': flag_openwater,
+                      'inland_waterway_path': p1}
+    date_ship = time_array(inputfile, date_start, date_end, openwater_sets)
     srcfile = "ship_area_info_new.pkl"
     with open(srcfile, "wb") as f:
         pickle.dump(date_ship, f)

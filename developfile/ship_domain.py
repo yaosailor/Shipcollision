@@ -121,7 +121,7 @@ def goodwindomain(own_ship_xy, cog):
     return ship_sector
 
 
-def wangdomain(own_ship_xy, length, vown, cog=0, k_shape=2, r_static=0.5):
+def wangdomain(own_ship_xy, length, vown, cog=0, k_shape=2, r_static=0.5, unit='deg'):
     """
     Parameters
     ----------
@@ -134,6 +134,8 @@ def wangdomain(own_ship_xy, length, vown, cog=0, k_shape=2, r_static=0.5):
     """
     # Constant
     r0 = 0.5
+    if isinstance(length, str):
+        length = float(length)
     # L is the own ship length,
     # k_AD and k_DT represent gains of the advance, AD ,
     # and the tactical diameter, D T ,
@@ -181,6 +183,8 @@ def wangdomain(own_ship_xy, length, vown, cog=0, k_shape=2, r_static=0.5):
     # Translation to position
     curves[0, :] += own_ship_xy[0]
     curves[1, :] += own_ship_xy[1]
+    if unit == 'deg':
+        curves = curves/(111*1000)
     return curves
 
 def ship_shap_base(length, width):
