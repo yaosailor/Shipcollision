@@ -13,6 +13,7 @@ import pickle
 from datetime import datetime, timedelta
 from collections import OrderedDict
 from fastkml import kml
+from math import sin, asin, cos, radians, fabs, sqrt
 from setting import study_area as study_area_default
 
 '''
@@ -352,3 +353,22 @@ def kml2path(url='None'):
     resulet = [(resulet[0][_], resulet[1][_]) for _ in range(0, len(resulet[0]))]
     return resulet
 
+earth_radius = 6371             # 地球平均半径，6371km
+
+
+def hav(theta):
+    s = sin(theta / 2)
+    return s * s
+
+def get_distance_hav(lat0, lng0, lat1, lng1):
+    "haversine"
+    lat0 = radians(lat0)
+    lat1 = radians(lat1)
+    lng0 = radians(lng0)
+    lng1 = radians(lng1)
+
+    dlng = fabs(lng0 - lng1)
+    dlat = fabs(lat0 - lat1)
+    h = hav(dlat) + cos(lat0) * cos(lat1) * hav(dlng)
+    distance = 2 * earth_radius * asin(sqrt(h))
+    return distance

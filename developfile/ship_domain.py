@@ -63,7 +63,7 @@ Parameters:
 '''
 
 
-def fujidomain(own_ship_xy, length, cog=0):
+def fujidomain(own_ship_xy, length, cog=0, unit='deg'):
     """
     Parameters
     ----------
@@ -85,11 +85,14 @@ def fujidomain(own_ship_xy, length, cog=0):
     Ell_rot = np.zeros((2, Ell.shape[1]))
     for i in range(Ell.shape[1]):
         Ell_rot[:, i] = np.dot(R_rot, Ell[:, i])
+    if unit == 'deg':
+        Ell_rot[0, :] = [jj/(111*1000) for jj in Ell_rot[0, :]]
+        Ell_rot[1, :] = [jj/(111*1000) for jj in Ell_rot[1, :]]
     domain_path = [own_ship_xy[0] + Ell_rot[0, :], own_ship_xy[1] + Ell_rot[1, :]]
     return domain_path
 
 
-def goodwindomain(own_ship_xy, cog):
+def goodwindomain(own_ship_xy, cog, unit='deg'):
     """
     Parameters
     ----------
@@ -115,6 +118,8 @@ def goodwindomain(own_ship_xy, cog):
         sector[:, num_start:num_start + number_of_scetor] = sector_tem[:, :]
         num_start = num_start + number_of_scetor
     sector[:, 3 * number_of_scetor] = sector[:, 0]
+    if unit == 'deg':
+        sector = sector/(111*1000)
     sector[0, :] += own_ship_xy[0]
     sector[1, :] += own_ship_xy[1]
     ship_sector = sector.copy()
@@ -180,11 +185,12 @@ def wangdomain(own_ship_xy, length, vown, cog=0, k_shape=2, r_static=0.5, unit='
     R_rot = np.array([[cos(t_rot), sin(t_rot)], [-sin(t_rot), cos(t_rot)]])
     for i in range(curves.shape[1]):
         curves[:, i] = np.dot(R_rot, curves[:, i])
+    if unit == 'deg':
+        curves = curves/(111*1000)
     # Translation to position
     curves[0, :] += own_ship_xy[0]
     curves[1, :] += own_ship_xy[1]
-    if unit == 'deg':
-        curves = curves/(111*1000)
+
     return curves
 
 def ship_shap_base(length, width):
