@@ -104,13 +104,12 @@ def goodwindomain(own_ship_xy, cog):
     #   defalut values is 100, that means every sector have 100 points.
     #   sector_tem: (x,y), size:(2, number_of_scetor)
     number_of_scetor = 100
-    radius_domain =[1.852*1000*x for x in [0.85, 0.4, 0.7]]
+    radius_domain =[1.852*1000*x for x in [0.85, 0.4, 0.75]] # 0.75
     thita_deg = pi * thita / 180
     sector = np.zeros(shape=(2, 3 * number_of_scetor + 1))
     # calculate the sectors
     num_start = 0
     for jj in range(0, thita_deg.shape[0] - 1):
-        print(num_start)
         t = np.linspace(thita_deg[jj], thita_deg[jj + 1], number_of_scetor)
         sector_tem = np.array([radius_domain[jj] * np.sin(t), radius_domain[jj] * np.cos(t)])
         sector[:, num_start:num_start + number_of_scetor] = sector_tem[:, :]
@@ -122,7 +121,7 @@ def goodwindomain(own_ship_xy, cog):
     return ship_sector
 
 
-def wangdomain(own_ship_xy, length, vown, cog=0, k_shape=2, r_static=0.5):
+def wangdomain(own_ship_xy, length, vown, cog=0, k_shape=2, r_static=0.5, unit='deg'):
     """
     Parameters
     ----------
@@ -135,11 +134,18 @@ def wangdomain(own_ship_xy, length, vown, cog=0, k_shape=2, r_static=0.5):
     """
     # Constant
     r0 = 0.5
+    if isinstance(length, str):
+        length = float(length)
     # L is the own ship length,
     # k_AD and k_DT represent gains of the advance, AD ,
     # and the tactical diameter, D T ,
-    k_ad = 10 ** (0.359 * lg(vown) + 0.0952)
-    k_dt = 10 ** (0.541 * lg(vown) - 0.0795)
+    if vown != 0.0:
+        k_ad = 10 ** (0.359 * lg(vown) + 0.0952)
+        k_dt = 10 ** (0.541 * lg(vown) - 0.0795)
+    else:
+        # When the speed approaches zero infinitely， k_ad = 10**-Inf = 0
+        k_ad = 0
+        k_dt = 0
     R_fore = (1 + 1.34 * sqrt((k_ad) ** 2 + (k_dt / 2) ** 2)) * length
     R_aft = (1 + 0.67 * sqrt((k_ad) ** 2 + (k_dt / 2) ** 2)) * length
     R_starb = (0.2 + k_dt) * length
@@ -168,13 +174,17 @@ def wangdomain(own_ship_xy, length, vown, cog=0, k_shape=2, r_static=0.5):
     curve3 = np.flipud(curve3)
     # cat the data series to one curve.
     curves = np.row_stack((curve1, curve4, curve3, curve2)).T
-    curves[0, :] += own_ship_xy[0]
-    curves[1, :] += own_ship_xy[1]
+
     #
     t_rot = pi * cog / 180 - pi / 2
     R_rot = np.array([[cos(t_rot), sin(t_rot)], [-sin(t_rot), cos(t_rot)]])
     for i in range(curves.shape[1]):
         curves[:, i] = np.dot(R_rot, curves[:, i])
+    # Translation to position
+    curves[0, :] += own_ship_xy[0]
+    curves[1, :] += own_ship_xy[1]
+    if unit == 'deg':
+        curves = curves/(111*1000)
     return curves
 
 def ship_shap_base(length, width):
@@ -188,6 +198,7 @@ def ship_shap_base(length, width):
 def ship_shape(ship_path, cog):
     t_rot = pi * cog / 180
     R_rot = np.array([[cos(t_rot), sin(t_rot)], [-sin(t_rot), cos(t_rot)]])
+
     ship_rot = np.zeros((2, ship_path.shape[1]))
     for i in range(ship_path.shape[1]):
         ship_rot[:, i] = np.dot(R_rot, ship_path[:, i])
@@ -198,10 +209,10 @@ if __name__ == '__main__':
     # - ship infomation
     length = 175
     width = 30.0
-    ownship_x = 100.0
+    ownship_x = 400.0
     ownship_y = 21
-    cog = 210
-    v_speed = 15
+    cog = 50
+    v_speed = 50
     # - process
     ship_path_base = ship_shap_base(length, width)
     ship_path = ship_shape(ship_path_base.T, cog)
@@ -224,9 +235,9 @@ if __name__ == '__main__':
     fig, ax = plt.subplots()
     ax.add_patch(pathpatch)
     line1, = plt.plot(domain_ship[0], domain_ship[1], 'gray')
-    line2, =plt.plot(domain_ship_g[0], domain_ship_g[1], 'blue')
-    line3, =plt.plot(domain_ship_w[0], domain_ship_w[1], 'r')
-    line4, =plt.plot(domain_ship_w2[0], domain_ship_w2[1], 'purple')
+    line2, = plt.plot(domain_ship_g[0], domain_ship_g[1], 'blue')
+    line3, = plt.plot(domain_ship_w[0], domain_ship_w[1], 'r')
+    line4, = plt.plot(domain_ship_w2[0], domain_ship_w2[1], 'purple')
 
     plt.grid(color='lightgray', linestyle='--')
     plt.legend(handles=[line1, line2, line3, line4],
